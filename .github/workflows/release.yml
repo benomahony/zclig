@@ -44,6 +44,7 @@ jobs:
       commit: ${{ steps.version.outputs.commit }}
       version: ${{ steps.version.outputs.version }}
       skip: ${{ steps.version.outputs.skip }}
+      notes: ${{ steps.version.outputs.notes }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -71,6 +72,13 @@ jobs:
           fi
           echo "Releasing v$next (after ${latest:-no release})."
           echo "version=$next" >> "$GITHUB_OUTPUT"
+          # Commits go straight to main, so their messages are the release notes.
+          delimiter=notes-$(openssl rand -hex 8)
+          {
+            echo "notes<<$delimiter"
+            git log --no-merges --format='- %s (%h)%n%n%w(0,2,2)%b' "${latest:+$latest..}HEAD" | { grep -v '^ *Co-Authored-By:' || true; }
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
 
   # zclig is consumed as source, so the release is the tag and GitHub's source archives.
   publish:
@@ -79,11 +87,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      NOTES: ${{ needs.version.outputs.notes }}
     steps:
+      # The commit messages come first; the generated notes add the full changelog link.
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
           gh release create "v$VERSION"
           --repo "$GITHUB_REPOSITORY" --target "${{ needs.version.outputs.commit }}"
-          --title "zclig v$VERSION" --generate-notes
+          --title "zclig v$VERSION" --notes "$NOTES" --generate-notes
