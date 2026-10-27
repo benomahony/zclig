@@ -32,6 +32,10 @@ pub fn render(app: cli.App, ctx: *cli.Context, cmd: ?*const cli.Command) !void {
     try p.paragraph(console, try p.literal(ctx.allocator, if (cmd) |c| c.spec.description else app.description), .{});
     try console.writer.writeByte('\n');
     if (cmd) |c| {
+        if (c.spec.aliases.len > 0) {
+            try p.paragraph(console, try p.literal(ctx.allocator, try std.fmt.allocPrint(ctx.allocator, "Aliases: {s}", .{try std.mem.join(ctx.allocator, ", ", c.spec.aliases)})), ctx.theme.muted);
+            try console.writer.writeByte('\n');
+        }
         if (c.spec.examples.len > 0) {
             try panel.begin("Examples");
             for (c.spec.examples) |example| try panel.text(try std.fmt.allocPrint(ctx.allocator, "$ {s}", .{try p.literal(ctx.allocator, example)}), ctx.theme.alias);
@@ -111,6 +115,7 @@ pub fn render(app: cli.App, ctx: *cli.Context, cmd: ?*const cli.Command) !void {
                     .{ .text = try p.literal(ctx.allocator, c.spec.name), .style = ctx.theme.option },
                     .{ .text = try p.literal(ctx.allocator, c.spec.description) },
                 }, &.{ names_width, panel.inner() - names_width - 2 });
+                if (c.spec.aliases.len != 0) try panel.row(&.{ .{ .text = try p.literal(ctx.allocator, try std.mem.join(ctx.allocator, ", ", c.spec.aliases)), .style = ctx.theme.muted }, .{} }, &.{ names_width, panel.inner() - names_width - 2 });
             }
             try panel.end();
             try console.writer.writeByte('\n');

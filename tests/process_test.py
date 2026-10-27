@@ -18,6 +18,7 @@ def main(binary):
         assert b'Examples:' in help_result.out and not help_result.err
         assert b'--dry-run' not in help_result.out and b'--yes' not in help_result.out
         assert b'--dry-run' in h.run('remove', '--help').check().out
+        assert b'Usage: parcel remove' in h.run('rm', '--help').check().out
         rich_help = h.run('inspect', '--help', stdout_tty=True).check()
         assert '╭'.encode() in rich_help.out and b'Input' in rich_help.out
         assert b'PATH' in rich_help.out and b'[required]' in rich_help.out
@@ -67,6 +68,8 @@ def main(binary):
             assert b'--yes' in r.err and not r.out
             assert sample.read_bytes() == data
         r = h.run('remove', '-p', 'sample.txt', '--dry-run', '--json').check(json_output=True)
+        assert json.loads(r.out)[0]['action'] == 'would remove'
+        r = h.run('rm', '-p', 'sample.txt', '--dry-run', '--json').check(json_output=True)
         assert json.loads(r.out)[0]['action'] == 'would remove'
         assert sample.read_bytes() == data
         config = root / 'parcel.json'

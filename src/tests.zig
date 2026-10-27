@@ -11,6 +11,7 @@ fn greet(ctx: *cli.Context, options: Options) ![]const Row {
 const app: cli.App = .{ .name = "test", .version = "1.0", .description = "Test CLI", .commands = &.{cli.command(Options, Row, .{
     .name = "greet",
     .description = "Greet someone",
+    .aliases = &.{"hello"},
     .examples = &.{"test greet --name Ada"},
     .options = &.{ .{ .name = "name", .help = "Name", .env = "TEST_NAME", .prompt = true }, .{ .name = "count", .short = 'c', .help = "Count", .min = 1, .max = 10 } },
 }, .{ .run = greet })} };
@@ -29,6 +30,23 @@ test "reusable conformance contract" {
         .{ .args = &.{ "greet", "--dry-run" }, .exit = .usage, .stdout_empty = true },
         .{ .args = &.{ "greet", "--name" }, .exit = .usage, .stderr_contains = "--name needs a value" },
         .{ .args = &.{ "greet", "--", "--help" }, .exit = .usage, .stdout_empty = true },
+    });
+}
+test "aliases dispatch to and show help for the primary command" {
+    try cli.conformance.check(std.testing.allocator, app, &.{
+        .{ .args = &.{ "hello", "--name=Ada", "--plain" }, .stdout_contains = "name=\"Ada\"\tcount=1\n", .stderr_contains = "Preparing" },
+        .{ .args = &.{ "hello", "--help" }, .stdout_contains = "Usage: test greet [options]\nAliases: hello\n", .stderr_empty = true },
+        .{ .args = &.{ "help", "hello" }, .stdout_contains = "--name", .stderr_empty = true },
+        .{ .args = &.{"--help"}, .stdout_contains = "greet  Greet someone [aliases: hello]\n" },
+        .{ .args = &.{ "hello", "--help" }, .redirected = false, .stdout_contains = "Aliases: hello" },
+        .{ .args = &.{"--help"}, .redirected = false, .stdout_contains = "hello" },
+    });
+    const clash: cli.App = .{ .name = "clash", .version = "1", .description = "Clash", .commands = &.{
+        cli.command(Options, Row, .{ .name = "upgrade", .description = "Upgrade", .aliases = &.{"update"}, .options = &.{ .{ .name = "name", .help = "Name" }, .{ .name = "count", .help = "Count" } } }, .{ .run = greet }),
+        cli.command(Options, Row, .{ .name = "update", .description = "Update", .options = &.{ .{ .name = "name", .help = "Name" }, .{ .name = "count", .help = "Count" } } }, .{ .run = greet }),
+    } };
+    try cli.conformance.check(std.testing.allocator, clash, &.{
+        .{ .args = &.{ "update", "--name=Ada" }, .exit = .internal, .stdout_empty = true, .stderr_contains = "'update' is declared more than once" },
     });
 }
 

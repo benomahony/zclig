@@ -79,7 +79,10 @@ Use optional metadata to organize larger applications:
 // In CommandSpec:
 .help_panel = "File operations", // top-level command grouping
 .result_title = "File inspection",
+.aliases = &.{"show"}, // alternative names that run this command
 ```
+
+`CommandSpec.aliases` lists alternative names, so `parcel rm` runs `parcel remove`. Help for an alias shows the primary command, and command lists show aliases beside it. Aliases follow the same naming rules as commands and are checked at compile time; a name or alias claimed by two commands fails every run with an internal error.
 
 `App.theme` is a `cli.Theme` of zrich styles for headings, options, aliases, values, muted annotations, borders, required markers, progress and errors. No application changes are needed to get the default appearance. Labels and values remain literal text; square brackets never activate markup.
 

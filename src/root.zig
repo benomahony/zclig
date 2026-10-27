@@ -151,6 +151,8 @@ pub const Positional = struct {
 pub const CommandSpec = struct {
     name: []const u8,
     description: []const u8,
+    /// Alternative names that dispatch to this command; help shows the primary name.
+    aliases: []const []const u8 = &.{},
     examples: []const []const u8 = &.{},
     help_panel: []const u8 = "Commands",
     result_title: []const u8 = "Result",
@@ -168,6 +170,11 @@ pub const Command = struct {
     fn hasPrompts(self: Command) bool {
         if (self.spec.destructive != null) return true;
         for (self.options) |o| if (o.info.prompt) return true;
+        return false;
+    }
+    fn named(self: Command, name: []const u8) bool {
+        if (eql(u8, self.spec.name, name)) return true;
+        for (self.spec.aliases) |alias| if (eql(u8, alias, name)) return true;
         return false;
     }
 };
@@ -270,6 +277,11 @@ pub fn command(comptime Options: type, comptime Row: type, comptime spec: Comman
         const rf = structFields(Row);
         const options = blk: {
             if (!validName(spec.name) or eql(u8, spec.name, "help")) @compileError("Invalid command name");
+            for (spec.aliases, 0..) |alias, i| {
+                if (!validName(alias) or eql(u8, alias, "help")) @compileError("Invalid command alias");
+                if (eql(u8, alias, spec.name)) @compileError("A command alias repeats the command name");
+                for (spec.aliases[0..i]) |prior| if (eql(u8, prior, alias)) @compileError("Duplicate command alias");
+            }
             if (spec.options.len != of.len) @compileError("OptionInfo must describe every Options field exactly once");
             var result: [of.len]Option = undefined;
             for (of, 0..) |f, i| {
@@ -514,10 +526,17 @@ pub const App = struct {
         }
     }
     fn find(self: App, name: []const u8) ?*const Command {
-        for (self.commands) |*cmd| if (eql(u8, cmd.spec.name, name)) return cmd;
+        for (self.commands) |*cmd| if (cmd.named(name)) return cmd;
         return null;
     }
     fn dispatch(self: App, ctx: *Context, args: []const []const u8) !Exit {
+        // Commands are borrowed by App, so names shared across commands are checked here.
+        for (self.commands, 0..) |cmd, i| for (self.commands[0..i]) |prior| {
+            const clash = if (prior.named(cmd.spec.name)) cmd.spec.name else for (cmd.spec.aliases) |alias| {
+                if (prior.named(alias)) break alias;
+            } else continue;
+            return ctx.fail(.internal, try std.fmt.allocPrint(ctx.allocator, "Command name or alias '{s}' is declared more than once.", .{clash}), "Give each command a unique name and aliases.");
+        };
         // This is an intent scan, not a second parser: help overrides malformed arguments.
         // A literal -- terminates the scan, so data named --help remains data.
         var want_help = args.len == 0;
@@ -724,6 +743,7 @@ pub const App = struct {
         try w.print(" — {s}\n\n", .{if (cmd) |c| c.spec.description else self.description});
         if (cmd) |c| {
             try w.print("Usage: {s} {s} [options]{s}\n", .{ self.name, c.spec.name, try positionalUsage(ctx.allocator, c.spec.positional) });
+            if (c.spec.aliases.len != 0) try w.print("Aliases: {s}\n", .{try std.mem.join(ctx.allocator, ", ", c.spec.aliases)});
             if (c.spec.positional) |p| {
                 try w.print("\nArguments:\n  {s}  {s}", .{ p.metavar, p.help });
                 if (p.default.len > 0) try w.print(" [default: {s}]", .{try std.mem.join(ctx.allocator, " ", p.default)});
@@ -754,7 +774,11 @@ pub const App = struct {
             if (c.spec.destructive != null) try w.writeAll("      --yes  Explicitly confirm this operation\n");
         } else {
             try w.print("Usage: {s} <command> [options]\n\nCommands:\n", .{self.name});
-            for (self.commands) |c| try w.print("  {s}  {s}\n", .{ c.spec.name, c.spec.description });
+            for (self.commands) |c| {
+                try w.print("  {s}  {s}", .{ c.spec.name, c.spec.description });
+                if (c.spec.aliases.len != 0) try w.print(" [aliases: {s}]", .{try std.mem.join(ctx.allocator, ", ", c.spec.aliases)});
+                try w.writeByte('\n');
+            }
             try w.print("\nRun '{s} help <command>' for examples and options.\n\nOptions:\n", .{self.name});
         }
         try w.writeAll("  -h, --help  Show help without running a handler\n      --version  Show version\n      --json  Emit a JSON array of public records\n      --plain  Emit stable unwrapped key=JSON records\n      --no-color  Disable color on both streams\n  -q, --quiet  Suppress progress\n");

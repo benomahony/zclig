@@ -92,6 +92,7 @@ pub const app: cli.App = .{
         }, .{ .run = inspect }),
         cli.command(FileOptions, RemoveRow, .{
             .name = "remove",
+            .aliases = &.{"rm"},
             .help_panel = "Destructive operations",
             .result_title = "File removal",
             .description = "Remove one file after confirmation",
