@@ -4,6 +4,16 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The release workflow runs this first, so nothing is released that fails it.
+  workflow_call:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request makes an older run pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
