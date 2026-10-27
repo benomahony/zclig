@@ -204,7 +204,7 @@ fn kindOf(comptime T: type) Kind {
         .int => .integer,
         .float => .number,
         .@"enum" => .choice,
-        else => @compileError("zcli supports strings, bools, integers, floats, enums, and optional scalars"),
+        else => @compileError("zclig supports strings, bools, integers, floats, enums, and optional scalars"),
     };
 }
 fn defaultText(comptime value: anytype) ?[]const u8 {

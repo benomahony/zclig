@@ -1,6 +1,6 @@
 //! A real file inspection/removal tool. Removal is explicit and preview never mutates.
 const std = @import("std");
-const cli = @import("zcli");
+const cli = @import("zclig");
 const FileOptions = struct { path: []const u8 };
 const InspectRow = struct { path: []const u8, bytes: u64, lines: u64, sha256: []const u8 };
 const RemoveRow = struct { path: []const u8, action: []const u8 };

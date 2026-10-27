@@ -1,7 +1,7 @@
 .{
-    .name = .zcli,
+    .name = .zclig,
     .version = "0.1.0",
-    .fingerprint = 0x927117ca6c82126a,
+    .fingerprint = 0x7af741cf2172ed11,
     .minimum_zig_version = "0.17.0",
     .dependencies = .{
         .zrich = .{ .url = "https://github.com/benomahony/zrich/archive/75ec874050667953be1b1d393c6816a62c530dcc.tar.gz", .hash = "zrich-0.1.0-DVxxqKszAQBQF1D94DcFIwlEhyuijXPrK729Sh5Edn-M" },

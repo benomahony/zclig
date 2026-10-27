@@ -1,4 +1,4 @@
-# zcli
+# zclig
 
 A standalone Zig CLI framework that turns the [Command Line Interface Guidelines](https://clig.dev/) into usable defaults. **zrich is its only external dependency**, pinned to a commit in `build.zig.zon`. zrich remains a separate, unmodified presentation library. Everything else uses Zig's standard library and code in this project.
 
@@ -27,7 +27,7 @@ The preview validates the target and returns `would remove`. Only the separate e
 ## Declare an application
 
 ```zig
-const cli = @import("zcli");
+const cli = @import("zclig");
 const Options = struct { name: []const u8, count: u32 = 1 };
 const Person = struct { name: []const u8, count: u32 };
 
@@ -55,13 +55,13 @@ const app: cli.App = .{
 
 Use the native adapter in [`examples/parcel.zig`](examples/parcel.zig) for process entry, environment and independent stream detection. In a host or test, call `app.run(allocator, args_without_argv0, runtime)` with injected writers and capabilities. `run` returns an `Exit`; only the process entry point decides when to exit. Keep `App` and its borrowed command descriptors alive for the call (top-level `const` declarations are convenient).
 
-Add zcli to your project with `zig fetch` (a local checkout also works as a path dependency, `.zcli = .{ .path = "../zcli" }`):
+Add zclig to your project with `zig fetch` (a local checkout also works as a path dependency, `.zclig = .{ .path = "../zclig" }`):
 
 ```sh
-zig fetch --save git+https://github.com/benomahony/zcli#v0.1.0
+zig fetch --save git+https://github.com/benomahony/zclig#v0.1.0
 ```
 
-Then add `b.dependency("zcli", .{ .target = target, .optimize = optimize }).module("zcli")` to your executable's imports.
+Then add `b.dependency("zclig", .{ .target = target, .optimize = optimize }).module("zclig")` to your executable's imports.
 
 ## Rich terminal presentation
 

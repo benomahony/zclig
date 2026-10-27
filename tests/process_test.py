@@ -8,7 +8,7 @@ from cli_contract import Harness
 
 
 def main(binary):
-    with tempfile.TemporaryDirectory(prefix='zcli-test-') as directory:
+    with tempfile.TemporaryDirectory(prefix='zclig-test-') as directory:
         root = Path(directory)
         sample = root / 'sample.txt'
         data = b'hello\nworld\n'
